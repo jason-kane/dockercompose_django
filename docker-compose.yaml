@@ -1,0 +1,56 @@
+version: '3'
+
+services:
+  db:
+    image: postgres:15.2-bullseye
+    volumes:
+      - ./data/db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+
+  nginx:
+      image: nginx:1.23
+      restart: always
+      ports:
+      # - "8080:80"
+      - "80:80"
+      volumes:
+      - ./log:/var/log/nginx
+      - ./nginx:/etc/nginx/
+      depends_on:
+      - web
+
+  web:
+    build: .
+    command: uwsgi --socket :8000 --enable-threads --wsgi-file moviemagic/wsgi.py
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - POSTGRES_NAME=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    depends_on:
+      - db
+
+  redis:
+    image: redis:7.0-bullseye
+    volumes:
+      - ./redis:/data
+    ports:
+      - "6379:6379"
+
+  celery:
+    build: .
+    command: celery -A moviemagic worker -l info
+    volumes:
+      - .:/app
+    environment:
+      - POSTGRES_NAME=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    depends_on:
+      - db

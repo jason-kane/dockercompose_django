@@ -1,0 +1,6 @@
+django==4.1.7
+psycopg2-binary>=2.8
+uwsgi
+celery
+redis
+django-celery=3.3.1
